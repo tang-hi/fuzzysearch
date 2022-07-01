@@ -25,7 +25,7 @@ func LevenshteinDistance(s, t string) int {
 			if r1[y-1] != r2[x-1] {
 				cost = 1
 			}
-			column[y] = min(column[y]+1, column[y-1]+1, lastDiag+cost)
+			column[y] = min(column[y]+1, min(column[y-1]+1, lastDiag+cost))
 			lastDiag = oldDiag
 		}
 	}
@@ -33,11 +33,52 @@ func LevenshteinDistance(s, t string) int {
 	return column[len(r1)]
 }
 
-func min(a, b, c int) int {
-	if a < b && a < c {
-		return a
-	} else if b < c {
-		return b
+func OSADamerauLevenshteinDistance(s, t string) int {
+	r1, r2 := []rune(s), []rune(t)
+	if len(r1) < len(r2) {
+		return OSADamerauLevenshteinDistance(t, s)
 	}
-	return c
+	row := min(len(r1)+1, 3)
+	matrix := make([][]int, 0, 3)
+
+	for i := 0; i < row; i++ {
+		matrix = append(matrix, make([]int, len(r2)+1))
+		for j := 0; j <= len(r2); j++ {
+			matrix[i][j] = 0
+		}
+		matrix[i][0] = i
+	}
+
+	for j := 0; j <= len(r2); j++ {
+		matrix[0][j] = j
+	}
+
+	for i := 1; i <= len(r1); i++ {
+		matrix[convert(i)][0] = i
+		for j := 1; j <= len(r2); j++ {
+			cost := 0
+			if r1[i-1] != r2[j-1] {
+				cost = 1
+			}
+
+			matrix[convert(i)][j] = min(matrix[convert(i-1)][j]+1,
+				min(matrix[convert(i)][j-1]+1, matrix[convert(i-1)][j-1]+cost))
+
+			if i > 1 && j > 1 && r1[i-1] == r2[j-2] && r1[i-2] == r2[j-1] {
+				matrix[convert(i)][j] = min(matrix[convert(i)][j], matrix[convert(i-2)][j-2]+1)
+			}
+		}
+	}
+	return matrix[convert(len(r1))][len(r2)]
+}
+
+func convert(a int) int {
+	return a % 3
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
